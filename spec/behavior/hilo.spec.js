@@ -29,7 +29,24 @@ function getDataStub( nextHiVal ) {
 	};
 }
 
-describe.only( "node-hilo - unit tests", function() {
+describe( "node-hilo - unit tests", function() {
+	describe( "when passing sql configuration", function() {
+		let hilo;
+		before( function() {
+			seriate.executeTransaction = sinon.stub( seriate, "executeTransaction" ).resolves( getDataStub( 100 ) );
+			hilo = getHiloInstance( seriate, { sql: { foo: "bar" }, hilo: { maxLo: 10, table: "dbo.HILO_TABLE" } } );
+			return hilo.nextId();
+		} );
+
+		it( "should call execute transaction with the expected sql configuration", function() {
+			seriate.executeTransaction.should.be.calledWith( { foo: "bar", name: "hilo" } );
+		} );
+
+		after( function() {
+			seriate.executeTransaction.restore();
+		} );
+	} );
+
 	describe( "when using a custom hilo table", function() {
 		let hilo;
 		before( function() {

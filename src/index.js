@@ -84,7 +84,10 @@ var HiLoFsm = machina.Fsm.extend( {
 	}
 } );
 
-module.exports = function( seriate, config ) {
+module.exports = function( seriate, cfg ) {
+	const config = _.cloneDeep( cfg );
+	_.set( config, "sql.name", "hilo" );
+
 	const hiloFsm = new HiLoFsm( {
 		initialize() {
 			this.maxLo = config.hilo.maxLo;
