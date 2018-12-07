@@ -1,9 +1,12 @@
 require( "../setup" );
 var processes = require( "processhost" )();
 var seriate = require( "seriate" );
+var tedious = require( "tedious" );
+var config = require( "./intTestDbCfg.json" );
+const ERR_CONSOLE_PREFIX = "Error executing integration tests:";
 
 describe( "node-hilo integration tests", function() {
-	describe( "when compared to a range of 10k NHibernate-generated keys", function() {
+	describe.only( "when compared to a range of 10k NHibernate-generated keys", function() {
 		const comparisons = [
 			{ file: "../data/nhibernate.hival0.json", hival: "0" },
 			{ file: "../data/nhibernate.hival10000.json", hival: "10000" },
@@ -12,22 +15,40 @@ describe( "node-hilo integration tests", function() {
 
 		comparisons.forEach( function( comparison ) {
 			describe( `with a starting hival of ${ comparison.hival }`, function() {
-				let hilo, hival;
-				before( function() {
-					hival = bigInt( comparison.hival );
-					const stubiate = {
-						executeTransaction() {
-							return {
-								then() {
-									const val = { next_hi: hival.toString() }; // eslint-disable-line camelcase
-									hival = hival.add( 1 );
-									return Promise.resolve( val );
-								}
-							};
+				let hilo;
+				before( function( done ) {
+					const connection = new tedious.Connection( {
+						server: config.sql.server,
+						authentication: {
+							type: "default",
+							options: {
+								userName: config.sql.user,
+								password: config.sql.password
+							}
 						},
-						fromFile() {}
-					};
-					hilo = getHiloInstance( stubiate, { hilo: { maxLo: 100 } } );
+						options: {
+							database: "nhutil"
+						}
+					} );
+
+					connection.on( "connect", err => {
+						if ( err ) {
+							console.error( ERR_CONSOLE_PREFIX, err ); /* eslint-disable-line no-console */
+						}
+
+						const hiloSqlReset = `UPDATE dbo.hibernate_unique_key WITH(rowlock,updlock) SET next_hi = ${ comparison.hival }`;
+
+						const request = new tedious.Request( hiloSqlReset, e => {
+							if ( e ) {
+								console.error( ERR_CONSOLE_PREFIX, err ); /* eslint-disable-line no-console */
+							}
+							done();
+						} );
+
+						connection.execSql( request );
+					} );
+
+					hilo = getHiloInstance( seriate, Object.assign( config, { hilo: { maxLo: 100 } } ) );
 				} );
 				it( "should match nhibernate's keys exactly", function() {
 					this.timeout( 20000 );

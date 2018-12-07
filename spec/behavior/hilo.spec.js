@@ -29,7 +29,7 @@ function getDataStub( nextHiVal ) {
 	};
 }
 
-describe.only( "node-hilo - unit tests", function() {
+describe( "node-hilo - unit tests", function() {
 	describe( "when using a custom hilo table", function() {
 		let hilo;
 		before( function() {
