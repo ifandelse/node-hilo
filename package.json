@@ -41,6 +41,7 @@
     },
     "dependencies": {
         "big-integer": "^1.6.40",
+        "dirty-chai": "^2.0.1",
         "lodash": "^4.17.11",
         "machina": "^4.0.2",
         "tedious": "^4.1.1"
